@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environnement virtuel
+.venv/
+
+# VSCode
+.vscode/
+
+# Data files
+data/
+!data/README.md
+
+# MongoDB volumes
+data/mongo/
+docker-data/
