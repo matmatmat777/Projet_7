@@ -36,5 +36,11 @@ services:
       CSV_PATH: /data/listings_paris.csv
     volumes:
       - ./data:/data
-    # On ne le lance pas tout le temps au démarrage, on l'exécute à la demande
+    restart: "no"   # ce service ne démarre pas automatiquement
+
+  analysis:
+    build: ./analysis
+    container_name: noscites_analysis
+    volumes:
+      - ./data:/data
     restart: "no"
