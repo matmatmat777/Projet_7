@@ -1,46 +1,126 @@
-version: "3.9"
-
 services:
-  mongo:
-    image: mongo:6
-    container_name: mongo_noscites
-    restart: always
-    ports:
-      - "27019:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - ./data/mongo:/data/db
 
-  mongo-express:
-    image: mongo-express:1.0.2
-    container_name: mongo_express_noscites
-    restart: always
-    ports:
-      - "8081:8081"
+  # ---------------------------------------------------------
+  # INGEST NESTED → vers ton replicaset local rs0
+  # ---------------------------------------------------------
+  ingest_nested:
+    build:
+      context: ./ingest
+      dockerfile: Dockerfile
+    container_name: ingest_nested_noscites
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_SERVER: mongo
-
-  ingest:
-    build: ./ingest
-    container_name: ingest_noscites
-    depends_on:
-      - mongo
-    environment:
-      MONGO_URI: mongodb://root:example@mongo:27017/
+      MONGO_URI: "mongodb://192.168.1.15:27021,192.168.1.15:27022,192.168.1.15:27023/noscites?replicaSet=rs0"
       MONGO_DB: noscites
-      MONGO_COLLECTION: listings_paris
-      CSV_PATH: /data/listings_paris.csv
+      MONGO_COLLECTION: listings_nested
     volumes:
       - ./data:/data
-    restart: "no"   # ce service ne démarre pas automatiquement
+    restart: "no"
 
+
+  # ---------------------------------------------------------
+  # INGEST FLAT → MongoDB Atlas (inchangé)
+  # ---------------------------------------------------------
+  ingest_flat:
+    build: ./ingest_flat
+    container_name: ingest_flat_noscites
+    environment:
+      MONGO_URI: "mongodb+srv://matdelmas_db_user:Zazaza123@cluster0.28hpijj.mongodb.net/noscites?retryWrites=true&w=majority&authSource=admin"
+      MONGO_DB: noscites
+      MONGO_COLLECTION: listings_flat
+    volumes:
+      - ./data:/data
+      - ./ingest_flat:/app
+    restart: "no"
+
+  # ---------------------------------------------------------
+  # ANALYSIS (Polars)
+  # ---------------------------------------------------------
   analysis:
     build: ./analysis
     container_name: noscites_analysis
     volumes:
       - ./data:/data
     restart: "no"
+##############################################################
+##############################################################
+# ---------------------------------------------------------
+# Anciennes définitions pour Mongo local (désactivées)
+# ---------------------------------------------------------
+
+# services:
+
+#   # ---------------------------------------------------------
+#   # Mongo local (pour ingest_nested + mongo-express)
+#   # ---------------------------------------------------------
+#   mongo:
+#     image: mongo:6
+#     container_name: mongo_noscites
+#     restart: always
+#     ports:
+#       - "27019:27017"
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: root
+#       MONGO_INITDB_ROOT_PASSWORD: example
+#     volumes:
+#       - ./data/mongo:/data/db
+
+#   # ---------------------------------------------------------
+#   # Interface Mongo locale
+#   # ---------------------------------------------------------
+#   mongo-express:
+#     image: mongo-express:1.0.2
+#     container_name: mongo_express_noscites
+#     restart: always
+#     ports:
+#       - "8081:8081"
+#     environment:
+#       ME_CONFIG_MONGODB_ADMINUSERNAME: root
+#       ME_CONFIG_MONGODB_ADMINPASSWORD: example
+#       ME_CONFIG_MONGODB_SERVER: mongo
+
+#   # ---------------------------------------------------------
+#   # INGEST NESTED → vers Mongo local
+#   # ---------------------------------------------------------
+#   ingest_nested:
+#     build:
+#       context: ./ingest
+#       dockerfile: Dockerfile
+#     container_name: ingest_nested_noscites
+#     depends_on:
+#       - mongo
+#     environment:
+#       MONGO_URI: mongodb://root:example@mongo:27017/
+#       MONGO_DB: noscites
+#       MONGO_COLLECTION: listings_nested
+#     volumes:
+#       - ./data:/data
+#     restart: "no"
+
+
+#   # ---------------------------------------------------------
+#   # INGEST FLAT → vers MongoDB Atlas
+#   # ---------------------------------------------------------
+#   ingest_flat:
+#     build: ./ingest_flat
+#     container_name: ingest_flat_noscites
+#     depends_on:
+#       - mongo
+#     environment:
+#     # Pour connexion à MongoDB Atlas
+#       MONGO_URI: "mongodb+srv://matdelmas_db_user:Zazaza123@cluster0.28hpijj.mongodb.net/noscites?retryWrites=true&w=majority&authSource=admin"
+#       MONGO_DB: noscites
+#       MONGO_COLLECTION: listings_flat
+#     volumes:
+#       - ./data:/data
+#       - ./ingest_flat:/app
+#     restart: "no"
+
+#   # ---------------------------------------------------------
+#   # Section “analysis” (Polars)
+#   # ---------------------------------------------------------
+#   analysis:
+#     build: ./analysis
+#     container_name: noscites_analysis
+#     volumes:
+#       - ./data:/data
+#     restart: "no"

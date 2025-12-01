@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Code
-COPY import_csv.py .
+COPY ingest_nested.py .
 
 # Commande par défaut
-CMD ["python", "import_csv.py"]
+CMD ["python", "ingest_nested.py"]
